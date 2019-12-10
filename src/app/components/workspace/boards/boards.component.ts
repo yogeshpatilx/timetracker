@@ -42,7 +42,7 @@ export class BoardsComponent implements OnInit {
   private boardsChecked: boolean
   private newIssue: newIssue
   private currentAgile: object
-  
+
   constructor(
     public api: ApiService,
     public timerService: TimerService,
@@ -52,7 +52,7 @@ export class BoardsComponent implements OnInit {
     public toasterService: ToasterService,
     public account: AccountService,
     public router: Router
-  ) { 
+  ) {
     this.newItemProperties = {
       date: 0,
       duration: 0
@@ -68,7 +68,7 @@ export class BoardsComponent implements OnInit {
       this.dataService.sendAgilesVisibility({name: this.agiles[i].name, state: this.agiles[i].visiblityState})
     }
   }
-  
+
   ngOnInit() {
     if (!window.navigator.onLine) {
       this.toasterService.error("No internet connection")
@@ -110,14 +110,14 @@ export class BoardsComponent implements OnInit {
   }
 
   public async createIssueOnBoard(data, board) {
-    this.agiles.filter(agile => { 
+    this.agiles.filter(agile => {
       if (agile.name == board){
         let state = agile.columnSettings.visibleValues[0].value;
         return this.api.createIssueOnBoard(data, board, state).then(() => this.init());
       }
     })
   }
-  
+
   public async openInBrowser(url : string){
     var account = await this.api.accounts.Current();
     shell.openExternal(account.url + url);
@@ -133,14 +133,14 @@ export class BoardsComponent implements OnInit {
       }
       this.agiles.filter(agile => {
         if (agile.name == boardVisibility[0].boardName) {
-          boardVisibility[0].visible == 1? agile.checked = true : agile.checked = false          
+          boardVisibility[0].visible == 1? agile.checked = true : agile.checked = false
         }
       })
     })
   }
 
   async getItemsFromDb() {
-    let account = await this.account.Current()    
+    let account = await this.account.Current()
     let that = this
     this.totalTimes = {}
     this.databaseService.getAllItems(account["id"]).then(data => {
@@ -161,7 +161,7 @@ export class BoardsComponent implements OnInit {
           }
         })
 
-      })  
+      })
       this.getAllAgiles()
     })
   }
@@ -178,8 +178,8 @@ export class BoardsComponent implements OnInit {
         agile.visiblityState = 'shown'
       }
       if (agile.checked) {
-        this.dataService.sendAgilesVisibility({name: agile.name, state: agile.visiblityState})  
-      }    
+        this.dataService.sendAgilesVisibility({name: agile.name, state: agile.visiblityState})
+      }
       agile.issues = []
       this.getIssuesByAgile(agile.name, index)
     })
@@ -215,7 +215,7 @@ export class BoardsComponent implements OnInit {
     let that = this
     console.log("issues", issues, )
     console.log(" agileName", agileName)
-    console.log("agileIndex", agileIndex)    
+    console.log("agileIndex", agileIndex)
     let tempIssues = []
     issues.issue.forEach((issue, index) => {
       var newIssue = {
@@ -236,7 +236,7 @@ export class BoardsComponent implements OnInit {
       issue.field.forEach((field, index) => {
         newIssue.field[field.name.replace(" ", "")] = field.value
       })
-      newIssue.field["Est"] = this.convertEstimate(newIssue.field["Est"])
+      newIssue.field["Est"] = this.convertEstimate(newIssue.field["Estimation"])
       newIssue.hasComment = Object.keys(newIssue.comment).length == 0? false : Object.keys(newIssue.comment).length
       newIssue.hasDescription = newIssue.field.hasOwnProperty('description')? true : false
       console.log("newIssue", newIssue)
@@ -265,7 +265,7 @@ export class BoardsComponent implements OnInit {
       }
     })
   }
-  
+
   public priorityClass(issue) {
     this.boardStates.filter(board => {
       if (board.boardName == issue.agile && board.state == issue.field.Priority[0]) {
@@ -278,13 +278,21 @@ export class BoardsComponent implements OnInit {
     if (est === undefined) {
       return "No est"
     } else {
-      let newEst = Number(est) / 60
-      if (newEst < 8) {
-        return newEst + "h"
-      } else if (newEst % 8 !== 0){
-        return Math.floor(newEst / 8) + "d" + newEst % 8 + "h"
+      let estMins = Number(est)
+      let minutes = estMins % 60
+      let totalHours = Math.floor (estMins / 60)
+      let hours = totalHours % 8
+      let days = Math.floor (totalHours / 8)
+      if (totalHours === 0) {
+        return `${minutes}m`
+      } else if (days === 0) {
+        return (minutes === 0) ? `${hours}h` : `${hours}h ${minutes}m`
       } else {
-        return Math.floor(newEst / 8) + "d"
+        if (minutes === 0) {
+          return (hours === 0) ? `${days}d` : `${days}d ${hours}h`
+        } else {
+          return (hours === 0) ? `${days}d ${minutes}m` : `${days}d ${hours}h ${minutes}m`
+        }
       }
     }
   }
